@@ -1,10 +1,9 @@
-
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function Login(){
+function LoginForm(){
   const [email,setEmail] = useState('')
   const [password,setPassword] = useState('')
   const [error,setError] = useState('')
@@ -55,5 +54,13 @@ export default function Login(){
         )}
       </div>
     </div>
+  )
+}
+
+export default function Login(){
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-400" dir="rtl">جاري التحميل...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
