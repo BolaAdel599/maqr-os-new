@@ -1,0 +1,12 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root{
+  --bg-light:#FFFBF5;
+  --bg-dark:#0A0A0B;
+  --primary:#FF6B2B;
+}
+body{ font-family: var(--font-cairo), 'Cairo', sans-serif; background: var(--bg-light); }
+* { -webkit-tap-highlight-color: transparent; }
+.touch-manipulation{ touch-action: manipulation; }

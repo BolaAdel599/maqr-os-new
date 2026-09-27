@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+enum SubscriptionStatus {
+  ACTIVE
+  GRACE
+  EXPIRED
+}
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  NEEDS_WAITER
+}
+enum OrderStatus {
+  AWAITING_PAYMENT
+  NEW
+  IN_KITCHEN
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+enum OrderSource {
+  QR
+  CASHIER
+  DELIVERY
+}
+enum PaymentMethod {
+  CASH
+  CARD
+}
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+enum DriverStatus {
+  AVAILABLE
+  ON_DELIVERY
+  OFFLINE
+}
+enum UserRole {
+  SUPER_ADMIN
+  RESTAURANT_ADMIN
+  CASHIER
+  KITCHEN
+  DRIVER
+}
+model User {
+  id String @id @default(cuid())
+  name String?
+  email String @unique
+  password String
+  role UserRole @default(RESTAURANT_ADMIN)
+  restaurantId String?
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  driverProfile Driver?
+}
+model Restaurant {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  domain String? @unique
+  customDomain String? @unique
+  ownerName String
+  ownerPhone String
+  subscriptionStatus SubscriptionStatus @default(ACTIVE)
+  subscriptionEnd DateTime
+  logo String?
+  planPrice Float @default(0)
+  createdAt DateTime @default(now())
+  tables Table[]
+  categories MenuCategory[]
+  menuItems MenuItem[]
+  orders Order[]
+  drivers Driver[]
+  logs SubscriptionLog[]
+  users User[]
+}
+model Table {
+  id String @id @default(cuid())
+  number Int
+  status TableStatus @default(AVAILABLE)
+  qrToken String @unique @default(cuid())
+  reservedName String?
+  reservedPhone String?
+  reservedTime DateTime?
+  people Int?
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  @@unique([restaurantId, number])
+}
+model MenuCategory {
+  id String @id @default(cuid())
+  name String
+  order Int @default(0)
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items MenuItem[]
+}
+model MenuItem {
+  id String @id @default(cuid())
+  name String
+  price Float
+  image String?
+  available Boolean @default(true)
+  options Json?
+  categoryId String
+  category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+model Order {
+  id String @id @default(cuid())
+  orderNumber Int @default(autoincrement())
+  tableId String?
+  tableNumber Int?
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items Json
+  total Float
+  status OrderStatus @default(NEW)
+  source OrderSource @default(QR)
+  verificationCode String?
+  address Json?
+  customerName String?
+  customerPhone String?
+  paymentMethod PaymentMethod @default(CASH)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymobOrderId String?
+  paymobTransactionId String?
+  driverId String?
+  driver Driver? @relation(fields: [driverId], references: [id])
+  attempts Int @default(0)
+  lockedUntil DateTime?
+  createdAt DateTime @default(now())
+  startedAt DateTime?
+  readyAt DateTime?
+}
+model Driver {
+  id String @id @default(cuid())
+  name String
+  phone String
+  status DriverStatus @default(AVAILABLE)
+  earnings Float @default(0)
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  // Links this delivery-staff roster row to the login account (User with
+  // role DRIVER) that operates the driver app, so we can find "my orders"
+  // for whoever is logged in. Previously there was no link between the two
+  // tables at all.
+  userId String? @unique
+  user User? @relation(fields: [userId], references: [id])
+  orders Order[]
+}
+model SubscriptionLog {
+  id String @id @default(cuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  oldStatus SubscriptionStatus
+  newStatus SubscriptionStatus
+  createdAt DateTime @default(now())
+}
